@@ -1,0 +1,22 @@
+#!/bin/sh
+
+case "" in
+  start)
+    echo "Starting waybeam_venc..."
+    start-stop-daemon -S -q -m -p /var/run/waybeam_venc.pid -b -x /usr/bin/waybeam_venc
+    ;;
+  stop)
+    echo "Stopping waybeam_venc..."
+    start-stop-daemon -K -q -p /var/run/waybeam_venc.pid
+    ;;
+  restart|reload)
+    $0 stop
+    sleep 1
+    $0 start
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart}"
+    exit 1
+    ;;
+esac
+exit 0
