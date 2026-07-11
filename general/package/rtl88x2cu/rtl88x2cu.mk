@@ -21,8 +21,8 @@ define RTL88X2CU_BUILD_CMDS
 endef
 
 define RTL88X2CU_INSTALL_TARGET_CMDS
-	$(INSTALL) -D -m 0644 $(@D)/8812cu.ko \
-		$(TARGET_DIR)/lib/modules/$(LINUX_VERSION_PROBED)/extra/8812cu.ko
+	$(INSTALL) -D -m 0644 $(@D)/88x2cu.ko \
+		$(TARGET_DIR)/lib/modules/$(LINUX_VERSION_PROBED)/extra/88x2cu.ko
 endef
 
 $(eval $(generic-package))
