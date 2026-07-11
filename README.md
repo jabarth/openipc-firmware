@@ -1,5 +1,21 @@
 ![OpenIPC logo][logo]
 
+# ⚠️ WAYBEAM CUSTOM FORK: CRITICAL FLASHING PRE-REQUISITE ⚠️
+> **Standard 16MB NOR flash chips use an 8MB `rootfs` partition limit. Because this custom Waybeam fork packs extensive networking and FPV packages, we expanded the rootfs boundary to 10MB.**
+> 
+> **Before flashing this firmware, you must update the U-Boot environment on your camera to recognize the new 10MB boundary.**
+> 
+> SSH into your camera and execute the following:
+> ```bash
+> CURRENT_MTD=$(fw_printenv mtdparts | cut -d= -f2-)
+> NEW_MTD=$(echo $CURRENT_MTD | sed 's/8192k(rootfs)/10240k(rootfs)/')
+> fw_setenv mtdparts "$NEW_MTD"
+> reboot
+> ```
+> *For full documentation on how this Waybeam fork operates and differs from upstream, please see [README-Waybeam.md](./README-Waybeam.md).*
+
+---
+
 ## Alternative open firmware for your IP camera
 _(based on Buildroot)_
 
