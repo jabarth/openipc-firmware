@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v4
 
@@ -27,3 +29,11 @@ jobs:
         path: |
           output/images/openipc*.tgz
 
+    - name: Create GitHub Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      uses: softprops/action-gh-release@v2
+      with:
+        name: Waybeam Custom Firmware (Build ${{ github.run_number }})
+        tag_name: build-${{ github.run_number }}
+        files: output/images/openipc*.tgz
+        generate_release_notes: true
