@@ -1,7 +1,13 @@
 #!/bin/sh
 
-case "" in
+case "$1" in
   start)
+    echo "Stopping majestic to free camera pipeline..."
+    killall -9 majestic 2>/dev/null
+
+    echo "Loading rtl88x2cu Wi-Fi driver..."
+    modprobe 88x2cu 2>/dev/null
+
     echo "Starting waybeam_venc..."
     start-stop-daemon -S -q -m -p /var/run/waybeam_venc.pid -b -x /usr/bin/waybeam_venc
     ;;
