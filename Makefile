@@ -130,11 +130,11 @@ else ifneq ($(wildcard $(TARGET)/images/firmware.bin),)
 else
 ifeq ($(BR2_TARGET_ROOTFS_SQUASHFS),y)
 ifeq ($(BR2_OPENIPC_SOC_VENDOR),"rockchip")
-	@$(call PREPARE_REPACK,zboot.img,4096,rootfs.squashfs,8192,nor)
+	@$(call PREPARE_REPACK,zboot.img,4096,rootfs.squashfs,10240,nor)
 else ifeq ($(BR2_OPENIPC_FLASH_SIZE),"8")
 	@$(call PREPARE_REPACK,uImage,2048,rootfs.squashfs,5120,nor)
 else
-	@$(call PREPARE_REPACK,uImage,2048,rootfs.squashfs,8192,nor)
+	@$(call PREPARE_REPACK,uImage,2048,rootfs.squashfs,10240,nor)
 endif
 endif
 ifeq ($(BR2_TARGET_ROOTFS_UBI),y)
