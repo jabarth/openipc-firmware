@@ -1,0 +1,27 @@
+# .github/waybeam-overlay/MANIFEST.txt
+# Source-of-truth contract for the Waybeam overlay. `tools/waybeam-overlay-gen.sh`
+# reads this to regenerate files/ + patches/ from the live tree. One path per
+# line; `=` separates action from path. Comments (#) and blank lines ignored.
+#
+#   add  <path>            copy live path verbatim into files/<path>
+#   patch <path>           emit git diff upstream..HEAD as patches/<sanitized>.patch
+#
+# Add files here ONLY if they are pure additions to upstream (no upstream
+# counterpart). Patch files here ONLY if upstream owns the file and your
+# change is surgical. If upstream adopts/abandons a file, move it between
+# `add` and `patch` accordingly and re-run the generator + commit.
+
+add general/package/waybeam_venc/Config.in
+add general/package/waybeam_venc/S95waybeam
+add general/package/waybeam_venc/waybeam.json
+add general/package/waybeam_venc/waybeam_venc.mk
+add general/package/rtl88x2cu/Config.in
+add general/package/rtl88x2cu/rtl88x2cu.mk
+add .github/workflows/build-ssc338q.yml
+add .gitlab-ci.yml
+add README-Waybeam.md
+
+patch general/package/Config.in
+patch Makefile
+patch br-ext-chip-sigmastar/configs/ssc338q_ultimate_defconfig
+patch README.md
