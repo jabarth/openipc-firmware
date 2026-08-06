@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-WAYBEAM_VENC_VERSION = 82f72acd812677996dd5ff545420beb68a05377c
+WAYBEAM_VENC_VERSION = 01654541c97e4b0728ff67669e4db1aceb63ad49
 WAYBEAM_VENC_SITE = https://github.com/OpenIPC/waybeam_venc.git
 WAYBEAM_VENC_SITE_METHOD = git
 WAYBEAM_VENC_LICENSE = GPL-2.0
