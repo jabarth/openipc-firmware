@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit
+#
+# Auto-syncs .github/waybeam-overlay/ from the live customization tree so the
+# CI overlay can never drift from the live files. Activated by running once:
+#
+#     git config core.hooksPath .githooks
+#
+# (documented in README-Waybeam.md). Safe: only fires when one of the manifest
+# `add`/`patch` paths is staged; runs the generator, re-stages its outputs.
+# Skips entirely if there is no upstream network or the manifest is untouched.
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+# Only care if a manifest-listed path or the manifest itself is in this commit.
+MANIFEST=".github/waybeam-overlay/MANIFEST.txt"
+[ -f "$MANIFEST" ] || exit 0
+trigger_paths=".github/waybeam-overlay/MANIFEST.txt tools/waybeam-overlay-gen.sh .githooks/pre-commit"
+while IFS= read -r line; do
+  line="${line%%#*}"
+  verb="${line%% *}"
+  rest="${line#* }"; rest="${rest## }"; rest="${rest%% }"
+  [ -z "$verb" ] || [ -z "$rest" ] && continue
+  case "$verb" in add|patch) trigger_paths="$trigger_paths $rest";;
+  esac
+done < "$MANIFEST"
+
+# Did any trigger path get staged? `git diff --cached --name-only -- <paths>`.
+staged=$(git diff --cached --name-only -- $trigger_paths || true)
+[ -n "$staged" ] || exit 0
+
+echo "waybeam: staged customization changes — regenerating overlay..."
+if ! bash tools/waybeam-overlay-gen.sh; then
+  echo "::warning::waybeam-overlay-gen.sh failed; overlay left untouched." >&2
+  echo "::warning::CI may build against a stale overlay." >&2
+  exit 1       # fail the commit so the divergence is noticed, not snuck in.
+fi
+
+git add .github/waybeam-overlay/files .github/waybeam-overlay/patches \
+  .github/waybeam-overlay/PROVENANCE.txt
+exit 0

@@ -1,0 +1,10 @@
+{
+  "sensor_config": "/etc/sensors/imx415_i2c_1080p_120fps.bin",
+  "video0": {
+    "size": "1920x1080",
+    "fps": 120,
+    "bitrate": 4000,
+    "gop_size": 10,
+    "codec": "h265"
+  }
+}
