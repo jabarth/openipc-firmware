@@ -21,3 +21,4 @@ patch general/package/Config.in
 patch Makefile
 patch br-ext-chip-sigmastar/configs/ssc338q_ultimate_defconfig
 patch README.md
+patch general/package/wifibroadcast-ng/wifibroadcast-ng.mk

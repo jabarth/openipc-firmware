@@ -1,5 +1,5 @@
 diff --git a/br-ext-chip-sigmastar/configs/ssc338q_ultimate_defconfig b/br-ext-chip-sigmastar/configs/ssc338q_ultimate_defconfig
-index ed3f0c0..5962897 100644
+index ed3f0c0d..5962897d 100644
 --- a/br-ext-chip-sigmastar/configs/ssc338q_ultimate_defconfig
 +++ b/br-ext-chip-sigmastar/configs/ssc338q_ultimate_defconfig
 @@ -67,9 +67,9 @@ BR2_PACKAGE_LIBCURL_OPENIPC_CURL=y

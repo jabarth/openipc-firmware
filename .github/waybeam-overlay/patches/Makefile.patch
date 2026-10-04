@@ -1,5 +1,5 @@
 diff --git a/Makefile b/Makefile
-index 981075b..5fec7b8 100644
+index 981075b1..5fec7b86 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -183,11 +183,11 @@ else ifneq ($(wildcard $(TARGET)/images/firmware.bin),)

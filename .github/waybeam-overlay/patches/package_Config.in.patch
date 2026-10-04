@@ -1,5 +1,5 @@
 diff --git a/general/package/Config.in b/general/package/Config.in
-index 5ddbe29..bcbc040 100644
+index 5ddbe29c..bcbc0408 100644
 --- a/general/package/Config.in
 +++ b/general/package/Config.in
 @@ -96,6 +96,7 @@ source "$BR2_EXTERNAL_GENERAL_PATH/package/rtl8733bu-openipc/Config.in"
