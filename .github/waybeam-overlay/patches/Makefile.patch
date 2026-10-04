@@ -1,8 +1,8 @@
 diff --git a/Makefile b/Makefile
-index c1a5268..30dd067 100644
+index 981075b..5fec7b8 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -130,11 +130,11 @@ else ifneq ($(wildcard $(TARGET)/images/firmware.bin),)
+@@ -183,11 +183,11 @@ else ifneq ($(wildcard $(TARGET)/images/firmware.bin),)
  else
  ifeq ($(BR2_TARGET_ROOTFS_SQUASHFS),y)
  ifeq ($(BR2_OPENIPC_SOC_VENDOR),"rockchip")

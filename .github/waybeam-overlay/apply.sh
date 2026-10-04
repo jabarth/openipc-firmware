@@ -3,7 +3,7 @@
 #
 # Applies the Waybeam custom delta on top of a freshly checked-out
 # OpenIPC/firmware tree. Designed so the fork always tracks upstream:
-#   1. Copy the pure-addition files (waybeam_venc, rtl88x2cu, our CI, docs).
+#   1. Copy the pure-addition files (rtl88x2cu, our CI, docs).
 #   2. Re-apply small surgical patches against upstream-maintained shared
 #      files (Config.in registration, Makefile 10MB rootfs, defconfig,
 #      README). Patches use `git apply --3way` so drift re-adjudicates
@@ -61,11 +61,11 @@ done
 # --- 3. sanity: the package tree we just dropped in must be registered ----
 test -f "$ROOT/general/package/rtl88x2cu/Config.in" \
   || { echo "::error::rtl88x2cu package missing"; exit 1; }
-test -f "$ROOT/general/package/waybeam_venc/Config.in" \
-  || { echo "::error::waybeam_venc package missing"; exit 1; }
+test -d "$ROOT/general/package/waybeam" \
+  || { echo "::error::upstream waybeam package missing (upstream refactor?)"; exit 1; }
 grep -q 'package/rtl88x2cu/Config.in' "$ROOT/general/package/Config.in" \
   || { echo "::error::rtl88x2cu not sourced in Config.in (patch drift)"; exit 1; }
-grep -q 'package/waybeam_venc/Config.in' "$ROOT/general/package/Config.in" \
-  || { echo "::error::waybeam_venc not sourced in Config.in (patch drift)"; exit 1; }
+grep -q 'package/waybeam/Config.in' "$ROOT/general/package/Config.in" \
+  || { echo "::error::upstream waybeam not sourced in Config.in (upstream refactor?)"; exit 1; }
 
 echo "== waybeam overlay applied =="

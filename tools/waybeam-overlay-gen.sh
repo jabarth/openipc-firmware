@@ -6,7 +6,7 @@
 # the live paths. Reads the manicfest at .github/waybeam-overlay/MANIFEST.txt.
 #
 # This is the pre-commit source-of-truth engine: edit the live file at
-# general/package/waybeam_venc/waybeam_venc.mk, run this (or just commit —
+# general/package/rtl88x2cu/rtl88x2cu.mk, run this (or just commit —
 # the .githooks/pre-commit hook runs it for you), and the overlay copy is
 # refreshed in the same commit. The CI overlay is therefore always a faithful
 # projection of the live customization.
@@ -48,6 +48,7 @@ mkdir -p "$FILES" "$PATCHES"
 name_from_path() { printf '%s' "$1" | sed -e 's|/|_|g' -e 's|^general_||' -e 's|^br-ext-chip-sigmastar_configs_||'; }
 
 while IFS= read -r line || [ -n "$line" ]; do
+  line="${line%$'\r'}"             # tolerate CRLF checkouts (Windows clones)
   line="${line%%#*}"                # strip comments
   case "$line" in
     ''|\ *) ;;

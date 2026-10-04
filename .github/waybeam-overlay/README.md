@@ -10,15 +10,14 @@ bit-rotting into a frozen upstream snapshot.
 waybeam-overlay/
   apply.sh          # copies files/ over the tree, re-applies patches/*.patch
   files/            # pure-addition files we ADD (no upstream counterpart)
-    general/package/waybeam_venc/   # waybeam_venc package (replaces majestic)
     general/package/rtl88x2cu/     # libc0607 FPV Wi-Fi driver
     .github/workflows/build-ssc338q.yml   # custom single-platform CI
     .gitlab-ci.yml                  # GitLab mirror build
     README-Waybeam.md               # project intent + flashing prereq
   patches/          # surgical git-format patches vs upstream-maintained files
-    package_Config.in.patch                                   # +register rtl88x2cu/waybeam_venc, -txw8301
+    package_Config.in.patch                                   # +register rtl88x2cu, -txw8301
     Makefile.patch                                            # 10MB rootfs: repack 8192 -> 10240
-    br-ext-chip-sigmastar_configs_ssc338q_ultimate_defconfig.patch  # +FPV stack, -majestic, -zerotier
+    ssc338q_ultimate_defconfig.patch  # +FPV stack, -majestic, -zerotier
     README.md.patch                                           # flashing prerequisite warning
 ```
 
