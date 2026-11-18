@@ -1,0 +1,30 @@
+diff --git a/Makefile b/Makefile
+index d4575f0..df6c0ca 100644
+--- a/Makefile
++++ b/Makefile
+@@ -197,7 +197,7 @@ ifeq ($(BR2_OPENIPC_NOR_FIXED_PACKAGE),y)
+ ifeq ($(BR2_OPENIPC_FLASH_SIZE),"8")
+ 	@$(if $(and $(call FIXED_SLOTS_FIT,5120),$(UBOOT_ROOTMTD_FITS)),$(call PREPARE_REPACK,uImage,1983,rootfs.squashfs,5120,nor),$(call FIXED_SLOTS_SKIP,5120))
+ else
+-	@$(if $(call FIXED_SLOTS_FIT,8192),$(call PREPARE_REPACK,uImage,1983,rootfs.squashfs,8192,nor),$(call FIXED_SLOTS_SKIP,8192))
++	@$(if $(call FIXED_SLOTS_FIT,8192),$(call PREPARE_REPACK,uImage,1983,rootfs.squashfs,10240,nor),$(call FIXED_SLOTS_SKIP,8192))
+ endif
+ endif
+ 	@$(call CHECK_SIZE,firmware.bin,$(shell expr $(subst ",,$(BR2_OPENIPC_FLASH_SIZE)) \* 1024 - $$(( $(or $(BR2_OPENIPC_NOR_FIRMWARE_OFFSET),0x50000) / 1024 )) - 256))
+@@ -206,14 +206,14 @@ endif
+ else
+ ifeq ($(BR2_TARGET_ROOTFS_SQUASHFS),y)
+ ifeq ($(BR2_OPENIPC_SOC_VENDOR),"rockchip")
+-	@$(call PREPARE_REPACK,zboot.img,4096,rootfs.squashfs,8192,nor)
++	@$(call PREPARE_REPACK,zboot.img,4096,rootfs.squashfs,10240,nor)
+ else ifeq ($(BR2_OPENIPC_FLASH_SIZE),"8")
+ ifneq ($(UBOOT_ROOTMTD_VENDOR),)
+ 	@$(call CHECK_UBOOT_ROOTMTD)
+ endif
+ 	@$(call PREPARE_REPACK,uImage,2048,rootfs.squashfs,5120,nor)
+ else
+-	@$(call PREPARE_REPACK,uImage,2048,rootfs.squashfs,8192,nor)
++	@$(call PREPARE_REPACK,uImage,2048,rootfs.squashfs,10240,nor)
+ endif
+ endif
+ endif
