@@ -1,0 +1,162 @@
+name: Build SSC338Q Standard (with rtl88x2cu)
+
+# Standard OpenIPC build with rtl88x2cu driver added.
+# This preserves upstream majestic-based config, only adding the FPV Wi-Fi driver.
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+    inputs:
+      upstream_ref:
+        description: 'OpenIPC/firmware ref to build on top of (default: master)'
+        required: false
+        default: 'master'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+
+      - name: Checkout fork (overlay + patches)
+        uses: actions/checkout@v4
+
+      - name: Resolve upstream ref
+        id: up
+        run: |
+          REF="${{ inputs.upstream_ref || 'master' }}"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout upstream OpenIPC/firmware
+        run: |
+          REF="${{ steps.up.outputs.ref }}"
+          set -euo pipefail
+          mkdir -p firmware
+          cd firmware
+          git init -q
+          git remote add upstream https://github.com/OpenIPC/firmware.git
+          git fetch --depth=1 upstream "$REF"
+          git checkout -q FETCH_HEAD
+          UP_SHA=$(git rev-parse HEAD)
+          UP_SHORT=$(git rev-parse --short HEAD)
+          echo "upstream_sha=$UP_SHA"     >> "$GITHUB_ENV"
+          echo "upstream_short=$UP_SHORT" >> "$GITHUB_ENV"
+          echo "## upstream: $UP_SHORT ($UP_SHA)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Building Standard (majestic + rtl88x2cu) on top of upstream $UP_SHORT"
+          git config user.email "standard@ci"
+          git config user.name  "standard-ci"
+          git add -A && git commit --allow-empty -q -m "upstream snapshot"
+
+      # Apply ONLY the rtl88x2cu addition (no Waybeam changes)
+      - name: Add rtl88x2cu driver
+        run: |
+          cd firmware
+          # Copy rtl88x2cu package
+          cp -r ../.github/waybeam-overlay/files/general/package/rtl88x2cu general/package/
+          # Register it in Config.in (after rtl88x2eu-openipc)
+          sed -i '/rtl88x2eu-openipc\/Config.in/a source "$BR2_EXTERNAL_GENERAL_PATH\/package\/rtl88x2cu\/Config.in"' general/package/Config.in
+          # Enable it in defconfig
+          sed -i '/BR2_PACKAGE_RTL8733BU_OPENIPC=y/a BR2_PACKAGE_RTL88X2CU=y' br-ext-chip-sigmastar/configs/ssc338q_ultimate_defconfig
+
+      - name: Prepare firmware
+        run: |
+          echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf
+          echo CACHE_DATE=$(date +%m) >> "$GITHUB_ENV"
+
+      - name: Setup ccache
+        uses: actions/cache@v4
+        if: github.event_name != 'pull_request'
+        with:
+          path: /tmp/ccache
+          key: ssc338q_standard-${{ env.CACHE_DATE }}
+
+      - name: Restore ccache
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v4
+        with:
+          path: /tmp/ccache
+          key: ssc338q_standard-${{ env.CACHE_DATE }}
+
+      - name: Setup dl cache
+        uses: actions/cache@v4
+        if: github.event_name != 'pull_request'
+        with:
+          path: firmware/output/dl
+          key: dl-ssc338q_standard-${{ env.CACHE_DATE }}
+          restore-keys: dl-ssc338q_standard-
+
+      - name: Restore dl cache
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v4
+        with:
+          path: firmware/output/dl
+          key: dl-ssc338q_standard-${{ env.CACHE_DATE }}
+          restore-keys: dl-ssc338q_standard-
+
+      - name: Refresh moving-ref package downloads
+        run: |
+          find firmware/output/dl -type f -regextype posix-extended \
+            -regex '.*[-.](HEAD|master|main|dist)\.tar\.(gz|bz2|xz)' \
+            -print -delete 2>/dev/null || true
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential git wget cpio unzip rsync bc \
+            python3 python3-pip libncurses5-dev libssl-dev device-tree-compiler \
+            u-boot-tools xz-utils
+
+      - name: Build firmware
+        run: |
+          mkdir -p /tmp/ccache
+          ln -s /tmp/ccache "$HOME/.ccache"
+          cd firmware
+          export GIT_HASH="${{ env.upstream_short }}"
+          export GIT_BRANCH="upstream/${{ steps.up.outputs.ref }}"
+          make BOARD=ssc338q_ultimate all
+
+      - name: Verify kernel modules
+        run: sh .github/scripts/check_target_modules.sh
+        working-directory: firmware
+        continue-on-error: true
+
+      - name: Locate artifacts
+        id: art
+        run: |
+          NORFW=$(find firmware/output/images -name 'openipc*nor*' | head -1)
+          [ -n "$NORFW" ] && echo "norfw=$NORFW" >> "$GITHUB_OUTPUT"
+          TGZ=$(find firmware/output/images -name 'openipc*.tgz' | head -1)
+          [ -n "$TGZ" ]  && echo "tgz=$TGZ"     >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: openipc-standard-firmware
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            firmware/output/images/openipc*.tgz
+            firmware/output/images/openipc*nor*
+            firmware/output/images/openipc*nand*
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master' && steps.art.outputs.tgz
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Standard SSC338Q Firmware + rtl88x2cu (Build ${{ github.run_number }})
+          tag_name: standard-build-${{ github.run_number }}
+          files: |
+            ${{ steps.art.outputs.tgz }}
+            ${{ steps.art.outputs.norfw }}
+          generate_release_notes: true
+          body: |
+            ## Standard SSC338Q ultimate firmware + rtl88x2cu
+            **Upstream ref:** `${{ steps.up.outputs.ref }}` @ `${{ env.upstream_short }}`
+            **Upstream SHA:** `${{ env.upstream_sha }}`
+            **Build run:** `${{ github.run_number }}`
+
+            This is the standard OpenIPC majestic-based build with the rtl88x2cu Wi-Fi driver added for Emax Wyvern Link VTX.
