@@ -76,7 +76,7 @@ jobs:
           cp "$OVL/wifibroadcast-ng/files/wifibroadcast" general/package/wifibroadcast-ng/files/wifibroadcast
           cp "$OVL/wifibroadcast-ng/files/etc/modules" general/package/wifibroadcast-ng/files/etc/modules
           cp "$OVL/wifibroadcast-ng/files/etc/modprobe.d/blacklist-88x2cu.conf" general/package/wifibroadcast-ng/files/etc/modprobe.d/blacklist-88x2cu.conf
-
+          cp "$OVL/wifibroadcast-ng/files/etc/wfb.yaml" general/package/wifibroadcast-ng/files/etc/wfb.yaml
           # adaptive-link wlan_adapters.yaml with bl-r8812cu profile
           mkdir -p general/package/adaptive-link
           cp "$OVL/adaptive-link/wlan_adapters.yaml" general/package/adaptive-link/wlan_adapters.yaml
@@ -160,7 +160,7 @@ jobs:
           rm -rf /tmp/rootfs_check && mkdir -p /tmp/rootfs_check
           tar -xzf "$TGZ" -C /tmp/rootfs_check
           # locate squashfs rootfs image inside the tgz
-          SQ=$(find /tmp/rootfs_check -name 'rootfs.squashfs' -o -name '*.squashfs' | head -1)
+          SQ=$(find /tmp/rootfs_check -name '*.squashfs' | grep -v md5sum | head -1)
           [ -n "$SQ" ] || { echo "::error::no squashfs found in tgz"; exit 1; }
           rm -rf /tmp/rootfs && mkdir -p /tmp/rootfs
           unsquashfs -d /tmp/rootfs "$SQ" > /dev/null
@@ -172,12 +172,12 @@ jobs:
           check "${MODDIR}/extra/88x2cu_ohd.ko"
           check /etc/init.d/S98wifibroadcast
           check /etc/init.d/S95majestic
-          check /etc/modules
-          check /etc/wlan_adapters.yaml
+          check /etc/wfb.yaml
           check_grep /etc/modules "cfg80211"
           check_grep /usr/bin/wifibroadcast "0bda:c812"
           check_grep /usr/bin/wifibroadcast "8812cu_ohd.ko"
-          check_grep /etc/wlan_adapters.yaml "bl-r8812cu"
+          check_grep /usr/bin/wifibroadcast "bl-r8812cu"
+          check_grep /etc/wfb.yaml "ttyS3"
           check_grep "${MODDIR}/modules.dep" "8812cu_ohd.ko"
           [ $fail -eq 0 ] || { echo "::error::rootfs missing required wfb-ng elements; refusing to publish"; exit 1; }
           echo "== rootfs wfb-ng gate PASSED =="
