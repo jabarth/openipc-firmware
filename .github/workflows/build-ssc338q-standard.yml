@@ -76,11 +76,13 @@ jobs:
           cp "$OVL/wifibroadcast-ng/files/wifibroadcast" general/package/wifibroadcast-ng/files/wifibroadcast
           cp "$OVL/wifibroadcast-ng/files/wfb.yaml" general/package/wifibroadcast-ng/files/wfb.yaml
           cp "$OVL/wifibroadcast-ng/files/etc/modprobe.d/blacklist-88x2cu.conf" general/package/wifibroadcast-ng/files/etc/modprobe.d/blacklist-88x2cu.conf
-          # /etc/modules (cfg80211) is installed by rtl88x2cu.mk itself
+          # /etc/modules: general/overlay/etc/modules overwrites the package copy late
+          # in image assembly, so patch the overlay itself — cfg80211 must load first
+          sed -i '1i cfg80211' general/overlay/etc/modules
+          cat general/overlay/etc/modules
+
           # adaptive-link: overwrite mk + yaml in place (Config.in already sources it at line 1)
           cp -r "$OVL/adaptive-link/." general/package/adaptive-link/
-
-          # defconfig: driver + full wfb-ng stack (majestic stays ON)
           DEFCFG=br-ext-chip-sigmastar/configs/ssc338q_ultimate_defconfig
           sed -i '/BR2_PACKAGE_RTL8733BU_OPENIPC=y/a BR2_PACKAGE_RTL88X2CU=y' "$DEFCFG"
           cat >> "$DEFCFG" <<'EOF'
