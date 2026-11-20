@@ -77,8 +77,8 @@ jobs:
           cp "$OVL/wifibroadcast-ng/files/wfb.yaml" general/package/wifibroadcast-ng/files/wfb.yaml
           cp "$OVL/wifibroadcast-ng/files/etc/modprobe.d/blacklist-88x2cu.conf" general/package/wifibroadcast-ng/files/etc/modprobe.d/blacklist-88x2cu.conf
           # /etc/modules (cfg80211) is installed by rtl88x2cu.mk itself
-          mkdir -p general/package/adaptive-link
-          cp "$OVL/adaptive-link/wlan_adapters.yaml" general/package/adaptive-link/wlan_adapters.yaml
+          # adaptive-link: overwrite mk + yaml in place (Config.in already sources it at line 1)
+          cp -r "$OVL/adaptive-link/." general/package/adaptive-link/
 
           # defconfig: driver + full wfb-ng stack (majestic stays ON)
           DEFCFG=br-ext-chip-sigmastar/configs/ssc338q_ultimate_defconfig
