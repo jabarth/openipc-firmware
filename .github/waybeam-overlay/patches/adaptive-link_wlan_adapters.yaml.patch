@@ -1,0 +1,77 @@
+diff --git a/general/package/adaptive-link/wlan_adapters.yaml b/general/package/adaptive-link/wlan_adapters.yaml
+index 0000000..0000000 100644
+--- a/general/package/adaptive-link/wlan_adapters.yaml
++++ b/general/package/adaptive-link/wlan_adapters.yaml
+@@ -1,4 +1,4 @@
+-all_profiles: [bl-r8812af1,bl-m8812eu2,bl-m8731bu4,default]
++all_profiles: [bl-r8812af1,bl-m8812eu2,bl-m8731bu4,bl-r8812cu,default]
+ profiles:
+   bl-r8812af1:
+     description: "Not tested with instruments yet."
+@@ -80,6 +80,75 @@ profiles:
+       20mhz: [mcs0_20mhz_lgi, mcs1_20mhz_lgi, mcs2_20mhz_lgi, mcs3_20mhz_lgi, mcs4_20mhz_sgi, mcs5_20mhz_sgi]
+   default:
+     description: "Default burnproof profile. Change to your correct profile."
++  bl-r8812cu:
++    description: "RTL8812CU (0bda:c812) with OpenHD 88x2cu_ohd.ko - Emax Wyvern Link 200mw"
++    bw: [20]
++    stbc: [0,1]
++    ldpc_rx: [0,1]
++    ldpc_tx: [0,1]
++    guard: [long,short]
++    mcs: [0,1,2,3,4,5,6,7]
++    max_mtu: 3993
++    tx_power:
++      mcs0: [-1000,-3500,-4000,-4500,-5100]
++      mcs1: [-1000,-3000,-3750,-4000,-4500]
++      mcs2: [-1000,-3000,-3500,-3750,-4000]
++      mcs3: [-1000,-2500,-3000,-3500,-3750]
++      mcs4: [-1000,-2500,-3000,-3000,-3500]
++      mcs5: [-1000,-2000,-2000,-2000,-2000]
++      mcs6: [-1000,-2000,-2000,-2000,-2000]
++      mcs7: [-1000,-2000,-2000,-2000,-2000]
++    pwr_mw:
++      0: [1mW,1mW,1mW,1mW,1mW,1mW,1mW,1mW]
++      1: [25mW,25mW,25mW,25mW,25mW,25mW,25mW,25mW]
++      2: [40mW,40mW,40mW,30mW,30mW,30mW,30mW,30mW]
++      3: [70mW,70mW,70mW,60mW,60mW,60mW,50mW,50mW]
++      4: [100mW,100mW,100mW,90mW,90mW,80mW,80mW,70mW]
++    link_modes:
++      20mhz: [mcs0_20mhz_lgi, mcs1_20mhz_lgi, mcs2_20mhz_lgi, mcs3_20mhz_lgi, mcs4_20mhz_sgi, mcs5_20mhz_sgi]
++    presets:
++      all_presets: [long_range, medium_range, short_range, cinematic]
++      long_range:
++        description: "Long range datalink profile with low bitrate and high resilience."
++        video_bitrate: 4096
++        link_mode: mcs1_20mhz_lgi
++        fec_k: 4
++        fec_n: 6
++        mlink: 1200
++        recommended_diversity: [1,2,3,4]
++      medium_range:
++        description: "Medium range datalink profile with medium bitrate and medium resilience."
++        video_bitrate: 8192
++        link_mode: mcs2_20mhz_lgi
++        fec_k: 8
++        fec_n: 12
++        mlink: 2000
++        recommended_diversity: [1,2,3,4]
++      short_range:
++        description: "Short range datalink profile with medium-high bitrate and medium resilience."
++        video_bitrate: 12288
++        link_mode: mcs3_20mhz_lgi
++        fec_k: 8
++        fec_n: 12
++        mlink: 2400
++        recommended_diversity: [2,3,4]
++      cinematic:
++        description: "Very short range datalink profile with high bitrate and low resilience."
++        video_bitrate: 22600
++        link_mode: mcs5_20mhz_sgi
++        fec_k: 4
++        fec_n: 6
++        mlink: 3200
++        recommended_diversity: [3,4]
+     bw: [20]
+     stbc: [0]
+     ldpc_rx: [0]
