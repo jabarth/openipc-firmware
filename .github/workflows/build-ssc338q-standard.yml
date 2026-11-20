@@ -169,8 +169,10 @@ jobs:
           check() { if [ -e "/tmp/rootfs$1" ]; then echo "OK   $1"; else echo "::error::MISSING $1"; fail=1; fi; }
           check_grep() { if grep -q "$2" "/tmp/rootfs$1" 2>/dev/null; then echo "OK   $1 ~ $2"; else echo "::error::MISSING $1 contains '$2'"; fail=1; fi; }
           MODDIR=$(ls -d /tmp/rootfs/lib/modules/*/ 2>/dev/null | head -1 | sed 's|/tmp/rootfs||')
-          check "${MODDIR}/extra/8812cu_ohd.ko"
+          # 8812cu_ohd.ko is a symlink to 88x2cu_ohd.ko — test -e follows symlinks, but
+          # the target must exist too; check the real file plus the link
           check "${MODDIR}/extra/88x2cu_ohd.ko"
+          [ -L "/tmp/rootfs${MODDIR}/extra/8812cu_ohd.ko" ] && echo "OK   8812cu_ohd.ko symlink" || { echo "::error::MISSING 8812cu_ohd.ko symlink"; fail=1; }
           check /etc/init.d/S98wifibroadcast
           check /etc/init.d/S95majestic
           check /etc/wfb.yaml
@@ -181,7 +183,7 @@ jobs:
           check_grep /usr/bin/wifibroadcast "bl-r8812cu"
           check_grep /etc/wfb.yaml "ttyS3"
           check_grep /etc/wlan_adapters.yaml "bl-r8812cu"
-          check_grep "${MODDIR}/modules.dep" "8812cu_ohd.ko"
+          check_grep "${MODDIR}/modules.dep" "8812cu_ohd"
           [ $fail -eq 0 ] || { echo "::error::rootfs missing required wfb-ng elements; refusing to publish"; exit 1; }
           echo "== rootfs wfb-ng gate PASSED =="
       - name: Locate artifacts
