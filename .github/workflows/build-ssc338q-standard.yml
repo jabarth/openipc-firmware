@@ -1,8 +1,10 @@
-name: Build SSC338Q Standard (with rtl88x2cu)
+name: Build SSC338Q WFB-ng (majestic + wfb-ng + OpenHD 8812cu_ohd)
 
-# Standard OpenIPC build with rtl88x2cu driver added + 10MB rootfs.
-# This preserves upstream majestic-based config, only adding the FPV Wi-Fi driver
-# and expanding rootfs to 10MB (from 8MB) to accommodate the extra driver.
+# SSC338Q image for the Emax Wyvern Link VTX: upstream majestic build PLUS the
+# wfb-ng stack (wifibroadcast-ng, adaptive-link, msposd, mavlink-router,
+# i2c-telemetry), the OpenHD rtl88x2cu driver (8812cu_ohd.ko for 0bda:c812),
+# the bl-r8812cu adapter profile, /etc/modules with cfg80211, and the
+# proven S98wifibroadcast init script. 10MB rootfs to fit everything.
 on:
   push:
     branches: [ master ]
@@ -57,16 +59,38 @@ jobs:
           cd firmware
           sed -i 's/rootfs.squashfs,8192,nor/rootfs.squashfs,10240,nor/g' Makefile
 
-      # Add rtl88x2cu driver
-      - name: Add rtl88x2cu driver
+      # Inject wfb-ng overlay: OpenHD driver, proven init script, adapter profile, /etc/modules
+      - name: Inject wfb-ng overlay (driver + packages + init + configs)
         run: |
+          set -euo pipefail
           cd firmware
-          # Copy rtl88x2cu package
-          cp -r ../.github/waybeam-overlay/files/general/package/rtl88x2cu general/package/
-          # Register it in Config.in (after rtl88x2eu-openipc)
+          OVL=../.github/waybeam-overlay/files/general/package
+
+          # rtl88x2cu package (OpenHD 73f36ba -> 88x2cu_ohd.ko + symlinks)
+          cp -r "$OVL/rtl88x2cu" general/package/
           sed -i '/rtl88x2eu-openipc\/Config.in/a source "$BR2_EXTERNAL_GENERAL_PATH\/package\/rtl88x2cu\/Config.in"' general/package/Config.in
-          # Enable it in defconfig
-          sed -i '/BR2_PACKAGE_RTL8733BU_OPENIPC=y/a BR2_PACKAGE_RTL88X2CU=y' br-ext-chip-sigmastar/configs/ssc338q_ultimate_defconfig
+
+          # wifibroadcast-ng: our proven init script (0bda:c812 -> 8812cu_ohd,
+          # insmod cfg80211-first) + /etc/modules (cfg80211) + modprobe.d note
+          mkdir -p general/package/wifibroadcast-ng/files/etc/modprobe.d
+          cp "$OVL/wifibroadcast-ng/files/wifibroadcast" general/package/wifibroadcast-ng/files/wifibroadcast
+          cp "$OVL/wifibroadcast-ng/files/etc/modules" general/package/wifibroadcast-ng/files/etc/modules
+          cp "$OVL/wifibroadcast-ng/files/etc/modprobe.d/blacklist-88x2cu.conf" general/package/wifibroadcast-ng/files/etc/modprobe.d/blacklist-88x2cu.conf
+
+          # adaptive-link wlan_adapters.yaml with bl-r8812cu profile
+          mkdir -p general/package/adaptive-link
+          cp "$OVL/adaptive-link/wlan_adapters.yaml" general/package/adaptive-link/wlan_adapters.yaml
+
+          # defconfig: driver + full wfb-ng stack (majestic stays ON)
+          DEFCFG=br-ext-chip-sigmastar/configs/ssc338q_ultimate_defconfig
+          sed -i '/BR2_PACKAGE_RTL8733BU_OPENIPC=y/a BR2_PACKAGE_RTL88X2CU=y' "$DEFCFG"
+          cat >> "$DEFCFG" <<'EOF'
+          BR2_PACKAGE_WIFIBROADCAST_NG=y
+          BR2_PACKAGE_ADAPTIVE_LINK=y
+          BR2_PACKAGE_MSPOSD=y
+          BR2_PACKAGE_I2C_TELEMETRY=y
+          BR2_PACKAGE_MAVLINK_ROUTER=y
+          EOF
 
       - name: Prepare firmware
         run: |
@@ -125,11 +149,38 @@ jobs:
           export GIT_BRANCH="upstream/${{ steps.up.outputs.ref }}"
           make BOARD=ssc338q_ultimate all
 
-      - name: Verify kernel modules
-        run: sh .github/scripts/check_target_modules.sh
-        working-directory: firmware
-        continue-on-error: true
-
+      # MANDATORY artifact gate: unpack the tgz rootfs and fail the build if any
+      # required wfb-ng element is missing. Prevents publishing a broken image.
+      - name: Verify rootfs contains wfb-ng stack (mandatory)
+        run: |
+          set -euo pipefail
+          cd firmware
+          TGZ=$(find output/images -name 'openipc*.tgz' | head -1)
+          [ -n "$TGZ" ] || { echo "::error::no openipc tgz artifact produced"; exit 1; }
+          rm -rf /tmp/rootfs_check && mkdir -p /tmp/rootfs_check
+          tar -xzf "$TGZ" -C /tmp/rootfs_check
+          # locate squashfs rootfs image inside the tgz
+          SQ=$(find /tmp/rootfs_check -name 'rootfs.squashfs' -o -name '*.squashfs' | head -1)
+          [ -n "$SQ" ] || { echo "::error::no squashfs found in tgz"; exit 1; }
+          rm -rf /tmp/rootfs && mkdir -p /tmp/rootfs
+          unsquashfs -d /tmp/rootfs "$SQ" > /dev/null
+          fail=0
+          check() { if [ -e "/tmp/rootfs$1" ]; then echo "OK   $1"; else echo "::error::MISSING $1"; fail=1; fi; }
+          check_grep() { if grep -q "$2" "/tmp/rootfs$1" 2>/dev/null; then echo "OK   $1 ~ $2"; else echo "::error::MISSING $1 contains '$2'"; fail=1; fi; }
+          MODDIR=$(ls -d /tmp/rootfs/lib/modules/*/ 2>/dev/null | head -1 | sed 's|/tmp/rootfs||')
+          check "${MODDIR}/extra/8812cu_ohd.ko"
+          check "${MODDIR}/extra/88x2cu_ohd.ko"
+          check /etc/init.d/S98wifibroadcast
+          check /etc/init.d/S95majestic
+          check /etc/modules
+          check /etc/wlan_adapters.yaml
+          check_grep /etc/modules "cfg80211"
+          check_grep /usr/bin/wifibroadcast "0bda:c812"
+          check_grep /usr/bin/wifibroadcast "8812cu_ohd.ko"
+          check_grep /etc/wlan_adapters.yaml "bl-r8812cu"
+          check_grep "${MODDIR}/modules.dep" "8812cu_ohd.ko"
+          [ $fail -eq 0 ] || { echo "::error::rootfs missing required wfb-ng elements; refusing to publish"; exit 1; }
+          echo "== rootfs wfb-ng gate PASSED =="
       - name: Locate artifacts
         id: art
         run: |

@@ -36,11 +36,32 @@ load_modules() {
 				adapter_id="bl-m8812eu2"
 				;;
 
+
+			"0bda:c812")
+				driver=8812cu_ohd
+				adapter_id="bl-r8812cu"
+				;;
+
 			"0bda:f72b" | "0bda:b733")
 				driver=8733bu
 				adapter_id="bl-m8731bu4"
 				;;
 		esac
+	done
+
+	# Wait for USB device if not detected yet (cold boot timing)
+	tries=0
+	while [ -z "$driver" ] && [ $tries -lt 10 ]; do
+		sleep 1
+		for card in $(lsusb | awk '{print $6}' | uniq); do
+			case "$card" in
+				"0bda:c812")
+					driver=8812cu_ohd
+					adapter_id="bl-r8812cu"
+					;;
+			esac
+		done
+		tries=$((tries + 1))
 	done
 
 	if [ -z "$driver" ]; then
@@ -50,6 +71,12 @@ load_modules() {
 
 	echo_log "Detected driver: $driver"
 	[ -e /sys/class/net/"$wfb_dev" ] && return
+
+	# cfg80211 must be resident before the 88x2cu_ohd module is loaded,
+	# otherwise insmod fails with "Unknown symbol wiphy_register" and the
+	# USB hotplug path never retries. /etc/modules lists cfg80211, but on
+	# slow cold boots S35modules can run before it is usable; load it here.
+	lsmod | grep -q "^cfg80211" || modprobe cfg80211 2>/dev/null
 	sleep 1
 
 	if [ "$driver" != "88XXau" ]; then
@@ -57,8 +84,15 @@ load_modules() {
 		opt2="rtw_tx_pwr_lmt_enable=0"
 	fi
 
-	
-	modprobe "$driver" "$opt1" "$opt2" MaxTxBufLen=32
+	# 8812cu_ohd.ko is the OpenHD rtl88x2cu fork for 0bda:c812; its internal
+	# module name is 88x2cu_ohd and there is no modules.alias entry, so load
+	# it by file path with insmod (cfg80211 guaranteed resident above).
+	# All other adapters keep the normal modprobe path.
+	if [ "$driver" = "8812cu_ohd" ]; then
+		insmod /lib/modules/$(uname -r)/extra/8812cu_ohd.ko "$opt1" "$opt2" MaxTxBufLen=32
+	else
+		modprobe "$driver" "$opt1" "$opt2" MaxTxBufLen=32
+	fi
 	sleep 3
 
 	if ! ifconfig "$wfb_dev" up; then
@@ -93,6 +127,12 @@ load_mlink() {
 }
 
 load_interface() {
+	# down->up cycle first: on this driver `iw set channel` fails with
+	# "Device or resource busy (-16)" while the interface is up.
+	ip link set "$wfb_dev" down
+	sleep 1
+	ip link set "$wfb_dev" up
+	sleep 1
 	iw "$wfb_dev" set monitor none
 
 	[ "$width" = "40" ] && wfb_width=HT40+ || wfb_width=HT20
@@ -138,7 +178,7 @@ start_telemetry() {
 		if [ "$router" = "msposd" ]; then
 			size=$(curl -s localhost/api/v1/config.json | jsonfilter -qe "@.video0.size")
 		fi
-		msposd -b 115200 -c 8 -r "$osd_fps" -m /dev/"$serial" \
+		msposd -M -b 115200 -c 8 -r "$osd_fps" -m /dev/"$serial" \
 			-o 127.0.0.1:"$port_tx" -z "$size" > /dev/null &
 
 		sleep 5
@@ -165,6 +205,13 @@ video_settings() {
 				wifibroadcast cli -s .broadcast.ldpc 1
 				;;
 
+			"0bda:c812")
+				driver=8812cu_ohd
+				wifibroadcast cli -s .wireless.txpower 20
+				wifibroadcast cli -s .wireless.wlan_adapter bl-r8812cu
+				wifibroadcast cli -s .broadcast.stbc 1
+				wifibroadcast cli -s .broadcast.ldpc 1
+				;;
 			"0bda:f72b" | "0bda:b733")
 				driver=8733bu
 				wifibroadcast cli -s .wireless.txpower 20
