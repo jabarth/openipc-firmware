@@ -21,6 +21,8 @@ define RTL88X2CU_INSTALL_TARGET_CMDS
 	# Symlinks so both on-disk names used by init scripts resolve to the module
 	ln -sf 88x2cu_ohd.ko $(TARGET_DIR)/lib/modules/$(LINUX_VERSION_PROBED)/extra/8812cu_ohd.ko
 	ln -sf 88x2cu_ohd.ko $(TARGET_DIR)/lib/modules/$(LINUX_VERSION_PROBED)/extra/8812cu.ko
+	# /etc/modules: cfg80211 must load before 8812cu_ohd (insmod needs wiphy_register)
+	$(INSTALL) -m 644 -D $(RTL88X2CU_PKGDIR)/files/etc/modules $(TARGET_DIR)/etc/modules
 endef
 
 $(eval $(generic-package))

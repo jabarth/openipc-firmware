@@ -74,10 +74,9 @@ jobs:
           # insmod cfg80211-first) + /etc/modules (cfg80211) + modprobe.d note
           mkdir -p general/package/wifibroadcast-ng/files/etc/modprobe.d
           cp "$OVL/wifibroadcast-ng/files/wifibroadcast" general/package/wifibroadcast-ng/files/wifibroadcast
-          cp "$OVL/wifibroadcast-ng/files/etc/modules" general/package/wifibroadcast-ng/files/etc/modules
+          cp "$OVL/wifibroadcast-ng/files/wfb.yaml" general/package/wifibroadcast-ng/files/wfb.yaml
           cp "$OVL/wifibroadcast-ng/files/etc/modprobe.d/blacklist-88x2cu.conf" general/package/wifibroadcast-ng/files/etc/modprobe.d/blacklist-88x2cu.conf
-          cp "$OVL/wifibroadcast-ng/files/etc/wfb.yaml" general/package/wifibroadcast-ng/files/etc/wfb.yaml
-          # adaptive-link wlan_adapters.yaml with bl-r8812cu profile
+          # /etc/modules (cfg80211) is installed by rtl88x2cu.mk itself
           mkdir -p general/package/adaptive-link
           cp "$OVL/adaptive-link/wlan_adapters.yaml" general/package/adaptive-link/wlan_adapters.yaml
 
@@ -173,11 +172,13 @@ jobs:
           check /etc/init.d/S98wifibroadcast
           check /etc/init.d/S95majestic
           check /etc/wfb.yaml
+          check /etc/wlan_adapters.yaml
           check_grep /etc/modules "cfg80211"
           check_grep /usr/bin/wifibroadcast "0bda:c812"
           check_grep /usr/bin/wifibroadcast "8812cu_ohd.ko"
           check_grep /usr/bin/wifibroadcast "bl-r8812cu"
           check_grep /etc/wfb.yaml "ttyS3"
+          check_grep /etc/wlan_adapters.yaml "bl-r8812cu"
           check_grep "${MODDIR}/modules.dep" "8812cu_ohd.ko"
           [ $fail -eq 0 ] || { echo "::error::rootfs missing required wfb-ng elements; refusing to publish"; exit 1; }
           echo "== rootfs wfb-ng gate PASSED =="
