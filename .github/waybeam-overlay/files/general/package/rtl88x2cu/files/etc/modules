@@ -1,3 +1,4 @@
+# loaded by S35modules at boot; cfg80211 must precede 8812cu_ohd
+cfg80211
 vfat
 exfat
-cfg80211
